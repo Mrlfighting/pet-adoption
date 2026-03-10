@@ -8,20 +8,44 @@ dotenv.config(); // fallback to .env
 const app = express();
 app.use(express.json());
 
-// --- Supabase 客户端 ---
+// --- 检查环境变量 ---
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ 缺少 SUPABASE_URL 或 SUPABASE_ANON_KEY 环境变量');
-  console.error('请在 .env.local 文件中配置这两个变量');
-  process.exit(1);
+  console.error('❌ Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables.');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = (!supabaseUrl || !supabaseKey) 
+  ? null 
+  : createClient(supabaseUrl, supabaseKey);
 
-// 默认用户 ID（简化版，无登录系统）
+// 默认用户 ID
 const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
+
+// --- 健康检查 ---
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    environment: process.env.NODE_ENV,
+    hasSupabase: !!supabase,
+    time: new Date().toISOString()
+  });
+});
+
+// Middleware to check supabase client
+app.use('/api', (req, res, next) => {
+  if (!supabase && req.path !== '/health') {
+    return res.status(500).json({ 
+      error: 'Backend is misconfigured: Supabase credentials missing.',
+      env_keys_present: {
+        SUPABASE_URL: !!process.env.SUPABASE_URL,
+        SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY
+      }
+    });
+  }
+  next();
+});
 
 // --- 宠物 API ---
 
