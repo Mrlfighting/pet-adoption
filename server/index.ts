@@ -317,7 +317,11 @@ function mapPetRow(row: any) {
 // --- 启动服务器 ---
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`🚀 PawAdopt 后端服务已启动: http://localhost:${PORT}`);
-  console.log(`📦 Supabase 连接: ${supabaseUrl}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 PawAdopt 后端服务已启动: http://localhost:${PORT}`);
+    console.log(`📦 Supabase 连接: ${supabaseUrl}`);
+  });
+}
+
+export default app;
